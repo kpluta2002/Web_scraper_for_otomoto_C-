@@ -10,6 +10,12 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Reflection;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using CsvHelper;
+using System.IO;
+using System.Globalization;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Web_Scraper
 {
@@ -140,7 +146,7 @@ namespace Web_Scraper
                     if (yn.ToLower() == "y")
                     {
                         Console.WriteLine($"Price range is {PriceRange(pricesOfModel)}.");
-                        Console.Write("Press any key to go back: "); if (!string.IsNullOrEmpty(Console.ReadLine())) { return; }
+                        Console.Write("Press enter to go back... "); if (!string.IsNullOrEmpty(Console.ReadLine())) { return; }
                         return;
                     }
                     else if (yn.ToLower() == "n")
@@ -170,7 +176,7 @@ namespace Web_Scraper
                     if (yn.ToLower() == "y")
                     {
                         Console.WriteLine($"Price range is {PriceRange(pricesOfAll)}.");
-                        Console.Write("Press any key to go back: "); if (!string.IsNullOrEmpty(Console.ReadLine())) { return; } 
+                        Console.Write("Press enter to go back... "); if (!string.IsNullOrEmpty(Console.ReadLine())) { return; } 
                         return;
                     }
                     else if (yn.ToLower() == "n")
@@ -388,7 +394,7 @@ namespace Web_Scraper
             public virtual void Scraper(string searchKeyword)
             {
                 // Send a get request to otomoto.pl
-                String url = string.Concat("https://www.otomoto.pl/osobowe/" + searchKeyword);
+                string url = string.Concat("https://www.otomoto.pl/osobowe/" + searchKeyword);
                 var httpClient = new HttpClient();
                 var html = httpClient.GetStringAsync(url).Result;
                 var htmlDocument = new HtmlDocument();
@@ -460,6 +466,38 @@ namespace Web_Scraper
             return 0;
         }
 
+        // Method for creating a CSV file //
+        public static void CreateCSV (List<Vehicle> vehicles)
+        {
+            Console.Write(@"Define file path and file name (ex. C:\Folder\your_file.csv): ");
+            string input = Console.ReadLine();
+            try
+            {
+                var writer = new StreamWriter(@input);
+                var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+                csv.WriteRecords(vehicles);
+                Console.WriteLine("Success!");
+                Console.Write("Press enter to go back... "); if (!string.IsNullOrEmpty(Console.ReadLine())) { return; }
+            }
+            catch (Exception ex) { Console.WriteLine("Wrong file path!"); Thread.Sleep(3000); }
+        }
+
+        // Method for creating JSON file //
+        public static void CreateJSON(List<Vehicle> vehicles)
+        {
+            Console.Write(@"Define file path and file name (ex. C:\Folder\your_file.json): ");
+            string input = Console.ReadLine();
+            try
+            {
+                string json = JsonSerializer.Serialize(vehicles);
+                File.WriteAllText(@input, json);
+                Console.WriteLine("Success!");
+                Console.Write("Press enter to go back... "); if (!string.IsNullOrEmpty(Console.ReadLine())) { return; }
+            }
+            catch(Exception ex) { Console.WriteLine("Wrong file path!"); Thread.Sleep(3000); }
+            
+        }
+
         // Menu which handles the whole process while app is running //
         public static void Menu(List<Vehicle> vehicles, Offers offers)
         {
@@ -478,6 +516,8 @@ namespace Web_Scraper
                 Console.WriteLine("|     5. Display by price ASC/DESC             |");
                 Console.WriteLine("|     6. Open car offer in browser             |");
                 Console.WriteLine("|     7. Scrape different make                 |");
+                Console.WriteLine("|     8. Create .csv file                      |");
+                Console.WriteLine("|     9. Create .json file                     |");
                 Console.WriteLine("*----------------------------------------------*");
                 Console.WriteLine("|     Press any other key to close program     |");
                 Console.WriteLine("*----------------------------------------------*");
@@ -488,7 +528,7 @@ namespace Web_Scraper
                 {
                     case 1:
                         method.DisplayAllVehicles(vehicles);
-                        Console.Write("Press any key to go back: "); if (!string.IsNullOrEmpty(Console.ReadLine())) { Console.Clear();  break; } Console.Clear(); break;
+                        Console.Write("Press enter to go back... "); if (!string.IsNullOrEmpty(Console.ReadLine())) { Console.Clear();  break; } Console.Clear(); break;
                     case 2:
                         method.DisplayAllVehicles(vehicles);
 
@@ -529,6 +569,14 @@ namespace Web_Scraper
                         offers.Scraper(searchKeyword);
                         vehicles = offers.Vehicles;
                         break;
+                    case 8:
+                        CreateCSV(vehicles);
+                        Console.Clear();
+                        break;
+                    case 9:
+                        CreateJSON(vehicles);
+                        Console.Clear();
+                        break;
 
 
                     default:
@@ -545,6 +593,7 @@ namespace Web_Scraper
             
             Console.WriteLine("Welcome to Otomoto web scraper!");
             Console.Write("What kind of car make are you looking for? : ");
+
             string searchKeyword = Console.ReadLine();
 
             offers.Scraper(searchKeyword);
