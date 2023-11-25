@@ -8,6 +8,8 @@ using System.Xml.Linq;
 using static Web_Scraper.Program;
 using System.Runtime.InteropServices.Marshalling;
 using System.Reflection;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Web_Scraper
 {
@@ -39,7 +41,7 @@ namespace Web_Scraper
 
                 foreach (var vehicle in vehicles)
                 {
-                    Console.WriteLine($"                         {i}. {vehicle.Name}");
+                    Console.WriteLine($"                         {i}. {vehicle.Name} - {vehicle.Price} PLN");
                     i++;
                 }
                 Console.WriteLine("[]--------------------------------------------------------------------------------------[]");
@@ -70,6 +72,11 @@ namespace Web_Scraper
                 Console.WriteLine(" ");
             }
 
+            //                                                                                                   //
+            // Start of methods that are connected with each other for calculating average price and price range //
+            //                                                                                                   //
+
+            // Method for calculating price range //
             private string PriceRange(List<int> prices)
             {
                 double min = Queryable.Min(prices.AsQueryable());
@@ -77,8 +84,7 @@ namespace Web_Scraper
                 string res = $"{min} - {max} PLN";
                 return res;
             }
-
-            // Method which calculates average price of model found //
+            // Method which calculates average price of vehicle model and gives user a choice to see price range //
             private void ModelAveragePrice(string model, List<Vehicle> vehicles)
             {
                 List<int> pricesOfModel = new List<int>();
@@ -134,6 +140,7 @@ namespace Web_Scraper
                     if (yn.ToLower() == "y")
                     {
                         Console.WriteLine($"Price range is {PriceRange(pricesOfModel)}.");
+                        Console.Write("Press any key to go back: "); if (!string.IsNullOrEmpty(Console.ReadLine())) { return; }
                         return;
                     }
                     else if (yn.ToLower() == "n")
@@ -146,7 +153,7 @@ namespace Web_Scraper
                     }
                 }
             }
-
+            // Method which calculates average price of all vehicles and gives user a choice to see price range //
             private void AllAveragePrice(List<Vehicle> vehicles)
             {
                 List<int> pricesOfAll = new List<int>();
@@ -163,6 +170,8 @@ namespace Web_Scraper
                     if (yn.ToLower() == "y")
                     {
                         Console.WriteLine($"Price range is {PriceRange(pricesOfAll)}.");
+                        Console.Write("Press any key to go back: "); if (!string.IsNullOrEmpty(Console.ReadLine())) { return; } 
+                        return;
                     }
                     else if (yn.ToLower() == "n")
                     {
@@ -174,6 +183,7 @@ namespace Web_Scraper
                     }
                 }
             }
+            // Main method which checks if user wants to see average price of all vehicles or a model and is branching to above methods //
             public virtual void VehiclesAveragePrice(List<Vehicle> vehicles)
             {
                 Console.Write("Would you like to display average price of a model or all vehicles?(Model/All) : ");
@@ -199,6 +209,7 @@ namespace Web_Scraper
                             else
                             {
                                 ModelAveragePrice(model, vehicles);
+                                return;
                             }
                             
                         }
@@ -206,6 +217,163 @@ namespace Web_Scraper
                     else
                     {
                         Console.Write("You need to specify if you want to see average price of model or all of the cars (Model/All): ");
+                    }
+                }
+            }
+            //                          //
+            // End of connected methods //
+            //                          //
+
+            // Method which displays all vehicles in given voivodeship
+            public virtual void CarsByVoivodeship(List<Vehicle> vehicles)
+            {
+                string[] voivodeships = 
+                    {"Dolnośląskie", "Kujawsko-pomorskie", "Lubelskie", "Lubuskie", "Łódzkie", "Małopolskie", "Mazowieckie", "Opolskie",
+                    "Podkarpackie", "Podlaskie", "Pomorskie", "Śąskie", "Świętokrzyskie", "Warmińsko-mazurskie", "Wielkopolskie", "Zachodniopomorskie"};
+
+
+                for (int i = 1; i < (voivodeships.Length)+1; i++)
+                {
+                    Console.WriteLine($"{i}. {voivodeships[i-1]}");
+                }
+
+                
+                while (true)
+                {
+                    Console.WriteLine(" ");
+                    Console.Write("Choose voivodeship from above or press enter to leave:");
+
+                    int index;
+                    string input = Console.ReadLine();
+                    Console.WriteLine(" ");
+                    if (string.IsNullOrWhiteSpace(input))
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        while (true)
+                        {
+                            if (Int32.TryParse(input, out index) && index < (voivodeships.Length)+1 && index > 0)
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                Console.Write("There is no such voivodeship. Pick a number from above or press enter to leave: ");
+                                input = Console.ReadLine();
+                                if (string.IsNullOrWhiteSpace(input))
+                                {
+                                    return;
+                                }
+                            }
+                        }
+
+                        int n = 1;
+                        foreach (var vehicle in vehicles)
+                        {
+                            if (vehicle.Location.ToLower().Contains(voivodeships[index - 1].ToLower()))
+                            {
+                                Console.WriteLine($"{n}. {vehicle.Name}");
+                                n++;
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            // Method for sorting cars by price and displaying them //
+            public virtual void Sorting(List<Vehicle> vehicles)
+            {
+                
+                string input;
+                MenuMethods menu = new MenuMethods();
+                List<Vehicle> sorted = new List<Vehicle>();
+                
+
+                while (true)
+                {
+                    Console.Write("Choose how would you like to sort or press enter to leave (ASC/DSC): ");
+                    input = Console.ReadLine();
+
+                    if (string.IsNullOrWhiteSpace(input))
+                    {
+                        return;
+                    }
+                    else if (input.ToLower() == "asc")
+                    {
+                        sorted = vehicles.OrderBy(vehicle => Convert.ToInt32(vehicle.Price.Replace(" ",""))).ToList();
+                        menu.DisplayAllVehicles(sorted);
+                        
+                    }
+                    else if (input.ToLower() == "dsc")
+                    {
+                        sorted = vehicles.OrderByDescending(vehicle => Convert.ToInt32(vehicle.Price.Replace(" ",""))).ToList();
+                        menu.DisplayAllVehicles(sorted);
+                        
+                    }
+                    else
+                    {
+                        Console.Write("Wrong input. Type ASC for ascending, DSC for descending or press Enter to leave: ");
+                        input = Console.ReadLine();
+                    }
+                }
+                return;
+            }
+
+            // Method which opens a link in default browser based on user input //
+            public virtual void OpenLink(List<Vehicle> vehicles)
+            {
+                string input;
+                string url;
+                int index;
+
+                while (true)
+                {
+                    Console.Write("Pick a number of the vehicle to be opened in browser or press enter to leave: ");
+                    input = Console.ReadLine();
+                    while (true)
+                    {
+                        if (string.IsNullOrWhiteSpace(input))
+                        {
+                            return;
+                        }
+                        else if (Int32.TryParse(input, out index) && index <= vehicles.Count && index > 0)
+                        {
+                            url = vehicles[index - 1].Link.ToString();
+                            break;
+                        }
+                        else
+                        {
+                            Console.Write("Wrong number. Pick from above or press enter to go back:");
+                            input = Console.ReadLine();
+                        }
+                    }
+
+                    try
+                    {
+                        Process.Start(url);
+                    }
+                    catch
+                    {
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        {
+                            url = url.Replace("&", "^&");
+                            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                        }
+                        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        {
+                            Process.Start("xdg-open", url);
+                        }
+                        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                        {
+                            Process.Start("open", url);
+                        }
+                        else
+                        {
+                            throw;
+                        }
                     }
                 }
             }
@@ -258,8 +426,6 @@ namespace Web_Scraper
                 return new Vehicle
                 {
                     Name = singleResult.SelectSingleNode(".//h1[@class='ev7e6t89 ooa-1xvnx1e er34gjf0']").InnerText,
-
-
                     Details = singleResult.SelectSingleNode(".//p[@class='ev7e6t88 ooa-17thc3y er34gjf0']").InnerText,
                     Mileage = singleResult.SelectSingleNode(".//dd[@data-parameter='mileage']").InnerText,
                     FuelType = singleResult.SelectSingleNode(".//dd[@data-parameter='fuel_type']").InnerText,
@@ -268,8 +434,6 @@ namespace Web_Scraper
                     Location = singleResult.SelectSingleNode(".//dd[@class='ooa-16w655c ev7e6t83']").InnerText,
                     Price = singleResult.SelectSingleNode(".//h3[@class='ev7e6t82 ooa-bz4efo er34gjf0']").InnerText,
                     Link = singleResult.SelectSingleNode(".//h1[@class='ev7e6t89 ooa-1xvnx1e er34gjf0']").ChildNodes["a"].GetAttributeValue("href", string.Empty)
-
-
                 };
             }
         }
@@ -297,7 +461,7 @@ namespace Web_Scraper
         }
 
         // Menu which handles the whole process while app is running //
-        public static void Menu(List<Vehicle> vehicles)
+        public static void Menu(List<Vehicle> vehicles, Offers offers)
         {
             MenuMethods method = new MenuMethods();
             
@@ -317,7 +481,7 @@ namespace Web_Scraper
                 Console.WriteLine("*----------------------------------------------*");
                 Console.WriteLine("|     Press any other key to close program     |");
                 Console.WriteLine("*----------------------------------------------*");
-                Console.Write("");
+
                 int inputSwitch = inputHandlerExit(Console.ReadLine());
 
                 switch (inputSwitch)
@@ -345,16 +509,25 @@ namespace Web_Scraper
                         break;
 
                     case 4:
-
+                        method.CarsByVoivodeship(vehicles);
+                        Console.Clear();
                         break;
                     case 5:
-
+                        method.Sorting(vehicles);
+                        Console.Clear();
                         break;
                     case 6:
-
+                        method.DisplayAllVehicles(vehicles);
+                        method.OpenLink(vehicles);
+                        Console.Clear();
                         break;
                     case 7:
-
+                        Console.Clear();
+                        Console.Write("What kind of car make are you looking for? : ");
+                        string searchKeyword = Console.ReadLine();
+                        offers = new Offers();
+                        offers.Scraper(searchKeyword);
+                        vehicles = offers.Vehicles;
                         break;
 
 
@@ -377,7 +550,7 @@ namespace Web_Scraper
             offers.Scraper(searchKeyword);
 
             
-            Menu(offers.Vehicles);
+            Menu(offers.Vehicles, offers);
             
             
         }
